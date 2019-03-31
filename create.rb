@@ -7,6 +7,11 @@ require 'zlib'
 # --alembic--
 system("git clone https://github.com/alembic/alembic") unless Dir.exist?('alembic')
 
+## checkout 1.7.10
+Dir.chdir('alembic')
+system("git checkout 4b64fa413298d4aa4f6f013e8ffdd7bfc1a1a2bc")
+Dir.chdir('..')
+
 Dir.mkdir('src') unless Dir.exist?('src')
 abc = 'src/Alembic'
 Dir.mkdir(abc) unless Dir.exist?(abc)
@@ -17,6 +22,8 @@ Dir.glob('alembic/lib/Alembic/*') do |src_dir|
     end
 
     name = File.basename(src_dir)
+
+    ## I don't support HDF5
     if name == 'AbcCoreHDF5' then
         next
     end
@@ -34,6 +41,7 @@ Dir.glob('alembic/lib/Alembic/*') do |src_dir|
     end
 end
 
+# Version for config.h
 cmakelists = File.read('alembic/CMakeLists.txt')
 major = cmakelists.match(/SET\(PROJECT_VERSION_MAJOR \"(\d+)\"\)/)[1]
 minor = cmakelists.match(/SET\(PROJECT_VERSION_MINOR \"(\d+)\"\)/)[1]
@@ -50,7 +58,7 @@ config = config.gsub(/#cmakedefine/, '// #cmakedefine')
 
 File.write(File.join(abc, "Util/Config.h"), config)
 
-# windows W, A problem
+# fix windows "W, A" problem
 
 istream_ogawa_path = 'src/Alembic/Ogawa/IStreams_Ogawa.cpp'
 istream_ogawa = File.read(istream_ogawa_path)
@@ -113,4 +121,4 @@ FileUtils.copy(File.join(ilmbase_src, 'config.windows/IlmBaseConfig.h'), 'src/Il
 FileUtils.copy('toFloat.h', 'src/toFloat.h')
 FileUtils.copy('eLut.h', 'src/eLut.h')
 
-
+puts 'Done. you can use "src" folder.'
