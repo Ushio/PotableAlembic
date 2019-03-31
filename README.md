@@ -1,5 +1,5 @@
 ## Create Potable Alembic Library for windows
-Alembic for windows is too complicated to build. So I created alembic drop-in src package. It is available to use just add this src to arbitrary projects.
+Alembic for windows is too complicated to build. So I created alembic drop-in src package. It is available to use just add this src to arbitrary projects. **No more dll**
 
 ## make
 
