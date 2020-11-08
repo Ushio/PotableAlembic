@@ -53,32 +53,14 @@ istream_ogawa_path = 'src/Alembic/Ogawa/IStreams_Ogawa.cpp'
 istream_ogawa = File.read(istream_ogawa_path)
 istream_ogawa = istream_ogawa.gsub(/CreateFile\(/, 'CreateFileA(')
 File.write(istream_ogawa_path, istream_ogawa)
-# --ilmbase--
-ilmbase_url = "http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz"
-zip_data = File.basename(ilmbase_url)
-ilmbase_src = 'ilmbase-2.2.0'
-if !File.exist?(zip_data) then
-    URI.open(zip_data, 'wb') do |file|
-        URI.open(ilmbase_url) do |data|
-            file.write(data.read)
-        end
-    end
-end
-if !Dir.exist?(ilmbase_src) then
-    tar_extract = Gem::Package::TarReader.new(Zlib::GzipReader.open(zip_data))
-    tar_extract.rewind # The extract has to be rewinded after every iteration
-    tar_extract.each do |entry|
-      if entry.directory? then
-        Dir.mkdir(entry.full_name) unless Dir.exist?(entry.full_name)
-      else
-        # File.write(entry.full_name, entry.read)
-        URI.open(entry.full_name, 'wb') do |file|
-            file.write(entry.read)
-        end
-      end
-    end
-    tar_extract.close
-end
+
+# OpenExr
+system("git clone https://github.com/AcademySoftwareFoundation/openexr") unless Dir.exist?('openexr')
+# checkout 2.5.3
+Dir.chdir('openexr')
+system("git checkout c32f82c5f1833d959321fc5f615ca52836c7ba65")
+Dir.chdir('..')
+ilmbase_src = 'openexr/IlmBase' 
 
 # Move to src
 to_dir = 'src'
@@ -89,39 +71,78 @@ src_list.each{ |name|
         FileUtils.copy(header, File.join(to_dir, File.basename(header)))
     end
     Dir.glob(File.join(src_dir, "*.cpp")) do |cpp|
+        if File.basename(cpp).start_with?("eLut") then
+            next
+        end
+        if File.basename(cpp).start_with?("toFloat") then
+            next
+        end
+
         name = File.basename(cpp, '.*')
-        if name == 'toFloat' then
-            next
-        end
-        if name == 'eLut' then
-            next
-        end
         new_name = File.basename(cpp, ".*") + "_" + name + File.extname(cpp)
         FileUtils.copy(cpp, File.join(to_dir, new_name))
     end
 } 
-# config is separated
-config_win = File.read(File.join(ilmbase_src, 'config.windows/IlmBaseConfig.h'));
-config_linux = File.read(File.join(ilmbase_src, 'config/IlmBaseConfig.h'));
-config = "#if defined (_WIN32) /* combined 2 IlmBaseConfig.h manually */\n"
-config += config_win
-config += "\n#else /* combined 2 IlmBaseConfig.h manually */ \n"
-config += config_linux
-config += "#endif /* combined 2 IlmBaseConfig.h manually */ "
-File.write('src/IlmBaseConfig.h', config)
-# copy pre-generated header
-FileUtils.copy('toFloat.h', 'src/toFloat.h')
-FileUtils.copy('eLut.h', 'src/eLut.h')
-# add missing macro
-Dir.glob('src/*Win32.cpp') do |winsrc|
-    src = File.read(winsrc);
-    src = "#if defined (_WIN32) \n\n" + src + "\n\n#endif"
-    File.write(winsrc, src)
+
+config_win = File.read('IlmBaseConfig_win.h');
+File.write('src/IlmBaseConfig.h', config_win)
+
+config_internal_win = File.read('IlmBaseConfigInternal_win.h');
+File.write('src/IlmBaseConfigInternal.h', config_internal_win)
+
+# OpenExr
+Dir.mkdir('src_openexr') unless Dir.exist?('src_openexr')
+
+to_dir = 'src_openexr'
+src_list = ['IlmImf', 'IlmImfUtil']
+src_list.each{ |name|
+    src_dir = File.join('openexr/OpenEXR', name)
+    Dir.glob(File.join(src_dir, "*.h")) do |header|
+        FileUtils.copy(header, File.join(to_dir, File.basename(header)))
+    end
+    Dir.glob(File.join(src_dir, "*.cpp")) do |cpp|
+        if File.basename(cpp).start_with?("Imf") then
+            new_name = File.basename(cpp, ".*") + "_" + name + File.extname(cpp)
+            FileUtils.copy(cpp, File.join(to_dir, new_name))
+        end
+    end
+}
+config_win = File.read('OpenEXRConfig_win.h');
+File.write('src_openexr/OpenEXRConfig.h', config_win)
+
+config_internal_win = File.read('OpenEXRConfigInternal_win.h');
+File.write('src_openexr/OpenEXRConfigInternal.h', config_internal_win)
+
+# zlib
+zlib_url = "https://zlib.net/zlib-1.2.11.tar.gz"
+zip_data = File.basename(zlib_url)
+if !File.exist?(zip_data) then
+    URI.open(zip_data, 'wb') do |file|
+        URI.open(zlib_url) do |data|
+            file.write(data.read)
+        end
+    end
+end
+
+Dir.mkdir('src_zlib') unless Dir.exist?('src_zlib')
+
+if !Dir.exist?(zip_data) then
+    tar_extract = Gem::Package::TarReader.new(Zlib::GzipReader.open(zip_data))
+    tar_extract.rewind # The extract has to be rewinded after every iteration
+    tar_extract.each do |entry|
+        name = entry.full_name.gsub!("zlib-1.2.11/","")
+        if /^[^\/]+\.[ch]$/.match?(name) || name == 'zlib.3.pdf' then
+            URI.open(File.join('src_zlib', name), 'wb') do |file|
+                file.write(entry.read)
+            end
+        end
+    end
+    tar_extract.close
 end
 
 # Copy
-config_linux = FileUtils.copy(File.join(ilmbase_src, 'LICENSE'), 'src/LICENSE-ilmbase-2.2.0');
-config_linux = FileUtils.copy('alembic/NEWS.txt', 'src/NEWS-alembic.txt');
-config_linux = FileUtils.copy('alembic/LICENSE.txt', 'src/LICENSE-alembic.txt');
+FileUtils.copy(File.join(ilmbase_src, '../README.md'), 'src/LICENSE-openexr2.5.3');
+FileUtils.copy('alembic/NEWS.txt', 'src/NEWS-alembic.txt');
+FileUtils.copy('alembic/LICENSE.txt', 'src/LICENSE-alembic.txt');
 
-puts 'Done. you can use "src" folder.'
+puts 'Done.'
