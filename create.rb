@@ -7,9 +7,9 @@ require 'zlib'
 # --alembic--
 system("git clone https://github.com/alembic/alembic") unless Dir.exist?('alembic')
 
-# checkout 1.7.13
+# checkout 1.7.16
 Dir.chdir('alembic')
-system("git checkout cfe114639ef7ad084d61e71ab86a17e708d838ae")
+system("git checkout 7e5cf9b896f4299117457f36a7bf47d962cd0ebf")
 Dir.chdir('..')
 
 Dir.mkdir('src_alembic') unless Dir.exist?('src_alembic')
