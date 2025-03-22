@@ -12,8 +12,8 @@ ruby create.rb
 You can use "src" folder.
 
 ## Versions
-- [alembic 1.7.16](https://github.com/alembic/alembic)
-- [openexr 2.5.3](https://github.com/AcademySoftwareFoundation/openexr)
+- [alembic 1.8.8](https://github.com/alembic/alembic)
+- [openexr 2.5.10](https://github.com/AcademySoftwareFoundation/openexr)
 
 ## Releases
 Current Results is [here](https://github.com/Ushio/PotableAlembic/releases)
