@@ -77,7 +77,7 @@ with open(os.path.join(abc, "Util/Config.h"), 'w') as config_out:
 if not os.path.exists('openexr'):
     run_command("git clone https://github.com/AcademySoftwareFoundation/openexr")
 
-# checkout 2.5.5
+# checkout 2.5.10
 os.chdir('openexr')
 run_command("git checkout b6eeef0de09e80d4858fa6ee4a699eef2c9613b5")
 if os.path.exists("build"):
